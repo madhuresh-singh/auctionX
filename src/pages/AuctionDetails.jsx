@@ -1,6 +1,6 @@
 import { ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Badge from '../components/common/Badge'
 import BidForm from '../components/auction/BidForm'
 import BidHistory from '../components/auction/BidHistory'
@@ -18,13 +18,34 @@ function findAuction(routeId) {
   return mockAuctions.find((auction, index) => auction.id === routeId || String(index + 1) === routeId)
 }
 
+function getStoredBids(auctionId) {
+  try {
+    const savedBids = window.localStorage.getItem(`auctionx-bids-${auctionId}`)
+    return savedBids ? JSON.parse(savedBids) : null
+  } catch {
+    return null
+  }
+}
+
 function AuctionDetails() {
   const { id } = useParams()
   const auction = findAuction(id)
+  const storedBids = auction ? getStoredBids(auction.id) : null
+  const defaultBids = auction ? initialBids.map((bid, index) => ({ ...bid, amount: index === 0 ? auction.currentPrice : bid.amount })) : []
+  const startingBids = storedBids || defaultBids
   const [currentBid, setCurrentBid] = useState(auction?.currentPrice ?? 0)
-  const [bidderCount, setBidderCount] = useState(auction?.bidderCount ?? 0)
-  const [bids, setBids] = useState(auction ? initialBids.map((bid, index) => ({ ...bid, amount: index === 0 ? auction.currentPrice : bid.amount })) : [])
+  const [bidderCount, setBidderCount] = useState(startingBids.length)
+  const [bids, setBids] = useState(startingBids)
   const [successMessage, setSuccessMessage] = useState('')
+
+  useEffect(() => {
+    if (!auction) return
+    window.localStorage.setItem(`auctionx-bids-${auction.id}`, JSON.stringify(bids))
+  }, [auction, bids])
+
+  useEffect(() => {
+    if (bids.length > 0) setCurrentBid(bids[0].amount)
+  }, [bids])
 
   if (!auction) {
     return (

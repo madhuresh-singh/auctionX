@@ -17,8 +17,18 @@ function formatRemainingTime(endTime, status) {
   return `${hours}h remaining`
 }
 
+function getBidderCount(auction) {
+  try {
+    const savedBids = window.localStorage.getItem(`auctionx-bids-${auction.id}`)
+    return savedBids ? JSON.parse(savedBids).length : auction.bidderCount
+  } catch {
+    return auction.bidderCount
+  }
+}
+
 function AuctionCard({ auction }) {
   const navigate = useNavigate()
+  const bidderCount = getBidderCount(auction)
 
   return (
     <article className="auction-card">
@@ -30,7 +40,7 @@ function AuctionCard({ auction }) {
         <h3>{auction.itemName}</h3>
         <p className="auction-description">{auction.description}</p>
         <div className="auction-meta">
-          <span><Users size={15} /> {auction.bidderCount} bidders</span>
+          <span><Users size={15} /> {bidderCount} bidders</span>
           <span><Clock3 size={15} /> {formatRemainingTime(auction.endTime, auction.status)}</span>
         </div>
         <div className="auction-card-footer">

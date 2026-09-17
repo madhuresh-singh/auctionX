@@ -5,6 +5,7 @@ import Auctions from './pages/Auctions'
 import AuctionDetails from './pages/AuctionDetails'
 import CreateAuction from './pages/CreateAuction'
 import MyBids from './pages/MyBids'
+import Profile from './pages/Profile'
 
 function PlaceholderPage({ title, description }) {
   return (
@@ -27,7 +28,7 @@ function App() {
         <Route element={<Auctions />} path="/auctions" />
         <Route element={<AuctionDetails />} path="/auctions/:id" />
         <Route element={<CreateAuction />} path="/create-auction" />
-        <Route element={<PlaceholderPage title="Profile" description="Your profile and activity will appear here." />} path="/profile" />
+        <Route element={<Profile />} path="/profile" />
         <Route element={<MyBids />} path="/my-bids" />
         <Route element={<PlaceholderPage title="Dashboard" description="Your auction dashboard is coming next." />} path="/dashboard" />
         <Route element={<PlaceholderPage title="Page not found" description="The page you requested does not exist." />} path="*" />
