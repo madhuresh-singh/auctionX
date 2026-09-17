@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Navbar from './components/common/Navbar'
+import Home from './pages/Home'
 
 function PlaceholderPage({ title, description }) {
   return (
@@ -18,7 +19,7 @@ function App() {
     <BrowserRouter>
       <Navbar />
       <Routes>
-        <Route element={<PlaceholderPage title="Welcome to AuctionX" description="Your real-time auction experience starts here." />} path="/" />
+        <Route element={<Home />} path="/" />
         <Route element={<PlaceholderPage title="Auctions" description="Browse active and upcoming auctions." />} path="/auctions" />
         <Route element={<PlaceholderPage title="Auction details" description="The auction details view is coming next." />} path="/auctions/:id" />
         <Route element={<PlaceholderPage title="Create an auction" description="Auction creation will be available in the next stage." />} path="/create-auction" />
