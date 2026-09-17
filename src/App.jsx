@@ -3,6 +3,8 @@ import Navbar from './components/common/Navbar'
 import Home from './pages/Home'
 import Auctions from './pages/Auctions'
 import AuctionDetails from './pages/AuctionDetails'
+import CreateAuction from './pages/CreateAuction'
+import MyBids from './pages/MyBids'
 
 function PlaceholderPage({ title, description }) {
   return (
@@ -24,9 +26,9 @@ function App() {
         <Route element={<Home />} path="/" />
         <Route element={<Auctions />} path="/auctions" />
         <Route element={<AuctionDetails />} path="/auctions/:id" />
-        <Route element={<PlaceholderPage title="Create an auction" description="Auction creation will be available in the next stage." />} path="/create-auction" />
+        <Route element={<CreateAuction />} path="/create-auction" />
         <Route element={<PlaceholderPage title="Profile" description="Your profile and activity will appear here." />} path="/profile" />
-        <Route element={<PlaceholderPage title="My bids" description="Track your bids and auction activity here." />} path="/my-bids" />
+        <Route element={<MyBids />} path="/my-bids" />
         <Route element={<PlaceholderPage title="Dashboard" description="Your auction dashboard is coming next." />} path="/dashboard" />
         <Route element={<PlaceholderPage title="Page not found" description="The page you requested does not exist." />} path="*" />
       </Routes>
