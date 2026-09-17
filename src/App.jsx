@@ -1,6 +1,8 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Navbar from './components/common/Navbar'
 import Home from './pages/Home'
+import Auctions from './pages/Auctions'
+import AuctionDetails from './pages/AuctionDetails'
 
 function PlaceholderPage({ title, description }) {
   return (
@@ -20,8 +22,8 @@ function App() {
       <Navbar />
       <Routes>
         <Route element={<Home />} path="/" />
-        <Route element={<PlaceholderPage title="Auctions" description="Browse active and upcoming auctions." />} path="/auctions" />
-        <Route element={<PlaceholderPage title="Auction details" description="The auction details view is coming next." />} path="/auctions/:id" />
+        <Route element={<Auctions />} path="/auctions" />
+        <Route element={<AuctionDetails />} path="/auctions/:id" />
         <Route element={<PlaceholderPage title="Create an auction" description="Auction creation will be available in the next stage." />} path="/create-auction" />
         <Route element={<PlaceholderPage title="Profile" description="Your profile and activity will appear here." />} path="/profile" />
         <Route element={<PlaceholderPage title="My bids" description="Track your bids and auction activity here." />} path="/my-bids" />
