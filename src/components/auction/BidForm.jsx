@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import Button from '../common/Button'
 
-function BidForm({ currentBid, onBidPlaced }) {
+function BidForm({ currentBid, isSubmitting, onBidPlaced }) {
   const [amount, setAmount] = useState('')
   const [error, setError] = useState('')
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
     const numericAmount = Number(amount)
 
@@ -19,9 +19,13 @@ function BidForm({ currentBid, onBidPlaced }) {
       return
     }
 
-    onBidPlaced(numericAmount)
-    setAmount('')
-    setError('')
+    try {
+      await onBidPlaced(numericAmount)
+      setAmount('')
+      setError('')
+    } catch (submissionError) {
+      setError(submissionError.message)
+    }
   }
 
   return (
@@ -39,7 +43,7 @@ function BidForm({ currentBid, onBidPlaced }) {
           type="number"
           value={amount}
         />
-        <Button type="submit">Place Bid</Button>
+        <Button disabled={isSubmitting} type="submit">{isSubmitting ? 'Placing...' : 'Place Bid'}</Button>
       </div>
       {error && <p className="bid-error" role="alert">{error}</p>}
     </form>

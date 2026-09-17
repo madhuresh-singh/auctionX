@@ -1,6 +1,7 @@
 import { Gavel } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import Button from './Button'
+import { getStoredUser } from '../../utils/userStorage'
 
 const navItems = [
   { label: 'Auctions', to: '/auctions' },
@@ -10,6 +11,8 @@ const navItems = [
 
 function Navbar() {
   const navigate = useNavigate()
+  const user = getStoredUser()
+  const initial = user?.name?.charAt(0).toUpperCase() || '?'
 
   return (
     <header className="navbar">
@@ -32,9 +35,19 @@ function Navbar() {
         ))}
       </nav>
 
+      <div className="navbar-user" title={user?.email}>
+        <span className="navbar-user-avatar" aria-hidden="true">{initial}</span>
+        <span className="navbar-user-name">{user?.name}</span>
+      </div>
       <Button onClick={() => navigate('/create-auction')} variant="primary">
         Create Auction
       </Button>
+      <style>{`
+        .navbar-user { align-items: center; color: var(--muted-text); display: flex; font-size: .85rem; gap: 8px; max-width: 180px; }
+        .navbar-user-avatar { align-items: center; background: rgba(85, 214, 190, .14); border: 1px solid rgba(85, 214, 190, .3); border-radius: 50%; color: var(--primary-accent); display: inline-flex; flex: 0 0 30px; font-size: .75rem; font-weight: 700; height: 30px; justify-content: center; width: 30px; }
+        .navbar-user-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        @media (max-width: 680px) { .navbar-user { order: 2; } .navbar-user-name { display: none; } }
+      `}</style>
     </header>
   )
 }

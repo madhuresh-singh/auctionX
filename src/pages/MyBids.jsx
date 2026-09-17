@@ -1,18 +1,32 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import Badge from '../components/common/Badge'
-import mockAuctions from '../data/mockData'
-
-const myBids = [
-  { auctionId: 'aurora-headphones', myBid: 27000, status: 'live', time: 'Today, 10:42 AM' },
-  { auctionId: 'nimbus-camera', myBid: 118000, status: 'live', time: 'Yesterday, 6:18 PM' },
-  { auctionId: 'vector-watch', myBid: 64000, status: 'upcoming', time: 'Sep 14, 2:05 PM' },
-]
+import { getAuctions, getAuctionBids } from '../api/auctionApi'
+import { getStoredUser } from '../utils/userStorage'
 
 function MyBids() {
-  const bidsWithAuctions = myBids.map((bid) => ({
-    ...bid,
-    auction: mockAuctions.find((auction) => auction.id === bid.auctionId),
-  }))
+  const user = getStoredUser()
+  const userId = user?.id
+  const [bidsWithAuctions, setBidsWithAuctions] = useState([])
+  const [isLoading, setIsLoading] = useState(Boolean(userId))
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!userId) return
+    getAuctions()
+      .then((auctions) => Promise.all(auctions.map((auction) => getAuctionBids(auction.id).then((bids) => ({ auction, bids })))))
+      .then((auctionResults) => setBidsWithAuctions(auctionResults.flatMap(({ auction, bids }) => bids
+        .filter((bid) => bid.userId === userId)
+        .map((bid) => ({
+          auctionId: auction.id,
+          myBid: bid.amount,
+          status: auction.status.toLowerCase(),
+          time: new Date(bid.createdAt).toLocaleString(),
+          auction: { ...auction, status: auction.status.toLowerCase() },
+        })))))
+      .catch((loadError) => setError(loadError.message))
+      .finally(() => setIsLoading(false))
+  }, [userId])
 
   const activeBids = bidsWithAuctions.filter((bid) => bid.status === 'live').length
   const totalBidValue = bidsWithAuctions.reduce((total, bid) => total + bid.myBid, 0)
@@ -45,7 +59,9 @@ function MyBids() {
           <p className="my-bids-description">Keep track of the auctions you are watching and the bids you have placed.</p>
         </div>
       </header>
-      {bidsWithAuctions.length > 0 ? (
+      {isLoading && <p className="detail-muted">Loading your bids...</p>}
+      {error && <section className="my-bids-empty" role="alert"><h2>Unable to load bids</h2><p>{error}</p></section>}
+      {!isLoading && !error && (bidsWithAuctions.length > 0 ? (
         <>
           <section className="bid-summary" aria-label="Bid summary">
             <div className="summary-card"><span className="summary-label">Total bids</span><strong>{bidsWithAuctions.length}</strong></div>
@@ -71,7 +87,7 @@ function MyBids() {
         </>
       ) : (
         <section className="my-bids-empty"><h2>No bids yet</h2><p>When you place a bid, it will appear here.</p></section>
-      )}
+      ))}
     </main>
   )
 }

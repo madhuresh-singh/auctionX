@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import Button from '../components/common/Button'
+import { saveLocalAuction } from '../utils/auctionStorage'
 
 const initialForm = {
   itemName: '',
@@ -15,11 +16,21 @@ function CreateAuction() {
   const [form, setForm] = useState(initialForm)
   const [errors, setErrors] = useState({})
   const [success, setSuccess] = useState(false)
+  const [image, setImage] = useState('')
 
   function handleChange(event) {
     const { name, value } = event.target
     setForm((currentForm) => ({ ...currentForm, [name]: value }))
     setErrors((currentErrors) => ({ ...currentErrors, [name]: '' }))
+    setSuccess(false)
+  }
+
+  function handleImageChange(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setImage(String(reader.result))
+    reader.readAsDataURL(file)
     setSuccess(false)
   }
 
@@ -35,7 +46,21 @@ function CreateAuction() {
     if (!form.endTime || new Date(form.endTime).getTime() <= Date.now()) nextErrors.endTime = 'End time must be in the future.'
 
     setErrors(nextErrors)
-    if (Object.keys(nextErrors).length === 0) setSuccess(true)
+    if (Object.keys(nextErrors).length === 0) {
+      saveLocalAuction({
+        id: `local-${Date.now()}`,
+        itemName: form.itemName.trim(),
+        description: form.description.trim(),
+        startingPrice,
+        currentPrice: startingPrice,
+        status: 'LIVE',
+        endTime: new Date(form.endTime).toISOString(),
+        bidderCount: 0,
+        image,
+        local: true,
+      })
+      setSuccess(true)
+    }
   }
 
   return (
@@ -54,6 +79,7 @@ function CreateAuction() {
         .form-field textarea { min-height: 130px; resize: vertical; }
         .form-field input:focus, .form-field textarea:focus, .form-field select:focus { border-color: var(--primary-accent); box-shadow: 0 0 0 2px rgba(85, 214, 190, .14); }
         .field-error { color: var(--danger); font-size: .82rem; margin: 0; }
+        .auction-image-preview { border: 1px solid var(--border); border-radius: 8px; height: 190px; object-fit: cover; width: min(100%, 360px); }
         .form-actions { align-items: center; border-top: 1px solid var(--border); display: flex; gap: 14px; grid-column: span 2; justify-content: space-between; padding-top: 22px; }
         .cancel-link { align-items: center; color: var(--muted-text); display: inline-flex; font-size: .9rem; gap: 7px; text-decoration: none; }
         .cancel-link:hover { color: var(--text); }
@@ -77,6 +103,11 @@ function CreateAuction() {
             <label htmlFor="description">Description</label>
             <textarea id="description" name="description" onChange={handleChange} value={form.description} />
             {errors.description && <p className="field-error" role="alert">{errors.description}</p>}
+          </div>
+          <div className="form-field form-field-wide">
+            <label htmlFor="auctionImage">Auction Image</label>
+            <input accept="image/*" id="auctionImage" onChange={handleImageChange} type="file" />
+            {image && <img alt="Auction preview" className="auction-image-preview" src={image} />}
           </div>
           <div className="form-field">
             <label htmlFor="startingPrice">Starting price (INR)</label>

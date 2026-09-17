@@ -1,7 +1,9 @@
 import { Clock3, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import Badge from '../common/Badge'
 import Button from '../common/Button'
+import { getAuction, getAuctionBids } from '../../api/auctionApi'
 
 function formatRemainingTime(endTime, status) {
   if (status === 'ended') return 'Auction ended'
@@ -20,15 +22,27 @@ function formatRemainingTime(endTime, status) {
 function getBidderCount(auction) {
   try {
     const savedBids = window.localStorage.getItem(`auctionx-bids-${auction.id}`)
-    return savedBids ? JSON.parse(savedBids).length : auction.bidderCount
+    return savedBids ? JSON.parse(savedBids).length : auction.bidderCount || 0
   } catch {
-    return auction.bidderCount
+    return auction.bidderCount || 0
   }
 }
 
 function AuctionCard({ auction }) {
   const navigate = useNavigate()
-  const bidderCount = getBidderCount(auction)
+  const backendAuctionId = auction.id
+  const [bidderCount, setBidderCount] = useState(getBidderCount(auction))
+  const [currentPrice, setCurrentPrice] = useState(auction.currentPrice)
+
+  useEffect(() => {
+    if (auction.local) return
+    Promise.all([getAuction(backendAuctionId), getAuctionBids(backendAuctionId)])
+      .then(([auctionData, bids]) => {
+        setCurrentPrice(auctionData.currentPrice)
+        setBidderCount(bids.length)
+      })
+      .catch(() => {})
+  }, [auction.local, backendAuctionId])
 
   return (
     <article className="auction-card">
@@ -46,7 +60,7 @@ function AuctionCard({ auction }) {
         <div className="auction-card-footer">
           <div>
             <span className="meta-label">Current bid</span>
-            <strong>₹{auction.currentPrice.toLocaleString('en-IN')}</strong>
+            <strong>₹{currentPrice.toLocaleString('en-IN')}</strong>
           </div>
           <Button onClick={() => navigate(`/auctions/${auction.id}`)} variant="secondary">
             View Auction

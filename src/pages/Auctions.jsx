@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import AuctionCard from '../components/auction/AuctionCard'
 import AuctionFilters from '../components/auction/AuctionFilters'
+import { getAuctions } from '../api/auctionApi'
 import mockAuctions from '../data/mockData'
+import { getLocalAuctions } from '../utils/auctionStorage'
 
 const categoriesByAuctionId = {
   'aurora-headphones': 'Electronics',
@@ -10,16 +12,30 @@ const categoriesByAuctionId = {
 }
 
 function Auctions() {
+  const [auctions, setAuctions] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
   const [category, setCategory] = useState('All Categories')
   const [sort, setSort] = useState('ending-soon')
 
+  useEffect(() => {
+    getAuctions()
+      .then((data) => setAuctions([...data, ...getLocalAuctions()].map((auction) => {
+        const presentation = mockAuctions[auction.id - 1] || mockAuctions.find((item) => item.itemName === auction.itemName)
+        return { ...auction, itemName: presentation?.itemName || auction.itemName, description: presentation?.description || auction.description, image: auction.image || presentation?.image || mockAuctions[0].image, status: auction.status.toLowerCase() }
+      })))
+      .catch((loadError) => setError(loadError.message))
+      .finally(() => setIsLoading(false))
+  }, [])
+
   const filteredAuctions = useMemo(() => {
-    const matchingAuctions = mockAuctions.filter((auction) => {
+    const matchingAuctions = auctions.filter((auction) => {
       const matchesSearch = auction.itemName.toLowerCase().includes(search.trim().toLowerCase())
       const matchesStatus = status === 'all' || auction.status === status
-      const auctionCategory = categoriesByAuctionId[auction.id] || 'Other'
+      const presentation = mockAuctions.find((item) => item.itemName === auction.itemName)
+      const auctionCategory = presentation ? categoriesByAuctionId[presentation.id] || 'Other' : 'Other'
       const matchesCategory = category === 'All Categories' || auctionCategory === category
 
       return matchesSearch && matchesStatus && matchesCategory
@@ -28,10 +44,10 @@ function Auctions() {
     return matchingAuctions.sort((firstAuction, secondAuction) => {
       if (sort === 'highest-bid') return secondAuction.currentPrice - firstAuction.currentPrice
       if (sort === 'lowest-bid') return firstAuction.currentPrice - secondAuction.currentPrice
-      if (sort === 'newest') return mockAuctions.indexOf(firstAuction) - mockAuctions.indexOf(secondAuction)
+      if (sort === 'newest') return new Date(secondAuction.createdAt).getTime() - new Date(firstAuction.createdAt).getTime()
       return new Date(firstAuction.endTime).getTime() - new Date(secondAuction.endTime).getTime()
     })
-  }, [category, search, sort, status])
+  }, [auctions, category, search, sort, status])
 
   return (
     <main className="auctions-page page-shell">
@@ -72,7 +88,9 @@ function Auctions() {
         status={status}
       />
 
-      {filteredAuctions.length > 0 ? (
+      {isLoading && <p className="detail-muted">Loading auctions...</p>}
+      {error && <section className="auction-empty" role="alert"><h2>Unable to load auctions</h2><p>{error}</p></section>}
+      {!isLoading && !error && (filteredAuctions.length > 0 ? (
         <div className="auction-results-grid">
           {filteredAuctions.map((auction) => <AuctionCard auction={auction} key={auction.id} />)}
         </div>
@@ -81,7 +99,7 @@ function Auctions() {
           <h2>No auctions found</h2>
           <p>Try adjusting your search or filters to see more results.</p>
         </section>
-      )}
+      ))}
     </main>
   )
 }

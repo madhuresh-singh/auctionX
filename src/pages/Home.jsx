@@ -2,7 +2,10 @@ import { ArrowUpRight, Gauge, LockKeyhole, Radio } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import Button from '../components/common/Button'
 import AuctionCard from '../components/auction/AuctionCard'
+import { useEffect, useState } from 'react'
+import { getAuctions } from '../api/auctionApi'
 import mockAuctions from '../data/mockData'
+import { getLocalAuctions } from '../utils/auctionStorage'
 
 const features = [
   { icon: Radio, title: 'Real-time bidding', text: 'See every bid as it happens with a live auction experience built for momentum.' },
@@ -12,6 +15,21 @@ const features = [
 
 function Home() {
   const navigate = useNavigate()
+  const [auctions, setAuctions] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    getAuctions()
+      .then((data) => setAuctions([...data, ...getLocalAuctions()].filter((auction) => auction.status.toUpperCase() === 'LIVE')))
+      .catch((loadError) => setError(loadError.message))
+      .finally(() => setIsLoading(false))
+  }, [])
+
+  function addPresentationData(auction) {
+    const presentation = mockAuctions[auction.id - 1] || mockAuctions.find((item) => item.itemName === auction.itemName)
+    return { ...auction, itemName: presentation?.itemName || auction.itemName, description: presentation?.description || auction.description, image: auction.image || presentation?.image || mockAuctions[0].image, status: auction.status.toLowerCase() }
+  }
 
   return (
     <div className="home-page">
@@ -42,9 +60,11 @@ function Home() {
             </div>
             <Link className="text-link" to="/auctions">View all auctions <ArrowUpRight size={16} /></Link>
           </div>
-          <div className="auction-grid">
-            {mockAuctions.map((auction) => <AuctionCard auction={auction} key={auction.id} />)}
-          </div>
+          {isLoading && <p className="detail-muted">Loading live auctions...</p>}
+          {error && <p className="bid-error" role="alert">{error}</p>}
+          {!isLoading && !error && <div className="auction-grid">
+            {auctions.map((auction) => <AuctionCard auction={addPresentationData(auction)} key={auction.id} />)}
+          </div>}
         </section>
 
         <section className="why-section page-shell" aria-labelledby="why-heading">

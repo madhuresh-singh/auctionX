@@ -6,48 +6,74 @@ import BidForm from '../components/auction/BidForm'
 import BidHistory from '../components/auction/BidHistory'
 import Countdown from '../components/auction/Countdown'
 import CurrentBid from '../components/auction/CurrentBid'
+import { getAuction, getAuctionBids, placeBid } from '../api/auctionApi'
 import mockAuctions from '../data/mockData'
+import { getStoredUser } from '../utils/userStorage'
+import { getLocalAuction } from '../utils/auctionStorage'
 
-const initialBids = [
-  { bidder: 'Riya S.', amount: 28500, time: '2 minutes ago' },
-  { bidder: 'Arjun K.', amount: 26000, time: '8 minutes ago' },
-  { bidder: 'Meera P.', amount: 22500, time: '14 minutes ago' },
-]
-
-function findAuction(routeId) {
-  return mockAuctions.find((auction, index) => auction.id === routeId || String(index + 1) === routeId)
+function formatBidTime(createdAt) {
+  return new Date(createdAt).toLocaleString()
 }
 
-function getStoredBids(auctionId) {
-  try {
-    const savedBids = window.localStorage.getItem(`auctionx-bids-${auctionId}`)
-    return savedBids ? JSON.parse(savedBids) : null
-  } catch {
-    return null
+function mapBid(bid) {
+  return {
+    bidder: bid.user?.name || 'Bidder',
+    amount: bid.amount,
+    time: formatBidTime(bid.createdAt),
   }
 }
 
 function AuctionDetails() {
   const { id } = useParams()
-  const auction = findAuction(id)
-  const storedBids = auction ? getStoredBids(auction.id) : null
-  const defaultBids = auction ? initialBids.map((bid, index) => ({ ...bid, amount: index === 0 ? auction.currentPrice : bid.amount })) : []
-  const startingBids = storedBids || defaultBids
-  const [currentBid, setCurrentBid] = useState(auction?.currentPrice ?? 0)
-  const [bidderCount, setBidderCount] = useState(startingBids.length)
-  const [bids, setBids] = useState(startingBids)
+  const localAuction = getLocalAuction(id)
+  const presentation = mockAuctions[Number(id) - 1]
+  const backendAuctionId = Number(id)
+  const isLocalAuction = Boolean(localAuction)
+  const [auction, setAuction] = useState(localAuction || null)
+  const [currentBid, setCurrentBid] = useState(localAuction?.currentPrice ?? 0)
+  const [bidderCount, setBidderCount] = useState(0)
+  const [bids, setBids] = useState([])
+  const [isLoading, setIsLoading] = useState(!isLocalAuction)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loadError, setLoadError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
-    if (!auction) return
-    window.localStorage.setItem(`auctionx-bids-${auction.id}`, JSON.stringify(bids))
-  }, [auction, bids])
+    if (isLocalAuction) return
+    if (!Number.isInteger(backendAuctionId) || backendAuctionId <= 0) return
 
-  useEffect(() => {
-    if (bids.length > 0) setCurrentBid(bids[0].amount)
-  }, [bids])
+    async function loadAuctionData() {
+      setIsLoading(true)
+      setLoadError('')
+      try {
+        const [auctionData, bidData] = await Promise.all([
+          getAuction(backendAuctionId),
+          getAuctionBids(backendAuctionId),
+        ])
+        const mappedBids = bidData.map(mapBid)
+        setAuction({ ...auctionData, itemName: presentation?.itemName || auctionData.itemName, description: presentation?.description || auctionData.description, image: auctionData.image || presentation?.image || mockAuctions[0].image, status: auctionData.status.toLowerCase() })
+        setCurrentBid(auctionData.currentPrice)
+        setBids(mappedBids)
+        setBidderCount(mappedBids.length)
+      } catch (error) {
+        setLoadError(error.message)
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-  if (!auction) {
+    loadAuctionData()
+  }, [backendAuctionId, isLocalAuction, localAuction, presentation?.description, presentation?.image, presentation?.itemName])
+
+  if (isLoading) {
+    return (
+      <main className="detail-page page-shell">
+        <p className="detail-muted">Loading auction data...</p>
+      </main>
+    )
+  }
+
+  if (loadError || !auction) {
     return (
       <main className="detail-page page-shell">
         <section className="not-found-panel">
@@ -60,11 +86,25 @@ function AuctionDetails() {
     )
   }
 
-  function handleBidPlaced(amount) {
-    setCurrentBid(amount)
-    setBidderCount((count) => count + 1)
-    setBids((existingBids) => [{ bidder: 'You', amount, time: 'Just now' }, ...existingBids])
-    setSuccessMessage('Your bid was placed successfully.')
+  async function handleBidPlaced(amount) {
+    setIsSubmitting(true)
+    setSuccessMessage('')
+    try {
+      const user = getStoredUser()
+      if (!user) throw new Error('Please log in before placing a bid.')
+      await placeBid(backendAuctionId, user.id, amount)
+      const [auctionData, bidData] = await Promise.all([
+        getAuction(backendAuctionId),
+        getAuctionBids(backendAuctionId),
+      ])
+      const mappedBids = bidData.map(mapBid)
+      setCurrentBid(auctionData.currentPrice)
+      setBids(mappedBids)
+      setBidderCount(mappedBids.length)
+      setSuccessMessage('Your bid was placed successfully.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -133,7 +173,8 @@ function AuctionDetails() {
           <section className="bidding-panel">
             <CurrentBid bidderCount={bidderCount} currentBid={currentBid} />
             <Countdown endTime={auction.endTime} />
-            <BidForm currentBid={currentBid} onBidPlaced={handleBidPlaced} />
+            {loadError && <p className="bid-error" role="alert">{loadError}</p>}
+            {isLoading ? <p className="detail-muted">Loading auction data...</p> : <BidForm currentBid={currentBid} isSubmitting={isSubmitting} onBidPlaced={handleBidPlaced} />}
             {successMessage && <p className="bid-success" role="status"><CheckCircle2 size={16} /> {successMessage}</p>}
           </section>
           <BidHistory bids={bids} />

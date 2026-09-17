@@ -1,3 +1,7 @@
+import gamingLaptopImage from '../assets/gaming-laptop.svg'
+import smartwatchImage from '../assets/smartwatch.svg'
+import wirelessEarbudsImage from '../assets/wireless-earbuds.svg'
+
 const mockAuctions = [
   {
     id: 'aurora-headphones',
@@ -23,14 +27,36 @@ const mockAuctions = [
   },
   {
     id: 'vector-watch',
-    itemName: 'Vector Automatic Watch',
-    description: 'A precision automatic timepiece with a brushed steel case.',
+    itemName: 'Pulse Smartwatch',
+    description: 'A health-focused smartwatch with GPS, sleep tracking, and a bright AMOLED display.',
     currentPrice: 76000,
     startingPrice: 60000,
     bidderCount: 3,
     status: 'upcoming',
     endTime: '2026-09-22T16:45:00',
-    image: 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=900&q=80',
+    image: smartwatchImage,
+  },
+  {
+    id: 'gaming-laptop',
+    itemName: 'Nebula Gaming Laptop',
+    description: 'A high-performance gaming laptop with a fast display and dedicated graphics.',
+    currentPrice: 110000,
+    startingPrice: 85000,
+    bidderCount: 0,
+    status: 'live',
+    endTime: '2026-09-24T16:00:00',
+    image: gamingLaptopImage,
+  },
+  {
+    id: 'wireless-earbuds',
+    itemName: 'Echo Wireless Earbuds',
+    description: 'Compact wireless earbuds with adaptive noise cancellation and a pocket charging case.',
+    currentPrice: 14500,
+    startingPrice: 10000,
+    bidderCount: 0,
+    status: 'live',
+    endTime: '2026-09-25T12:00:00',
+    image: wirelessEarbudsImage,
   },
 ]
 
